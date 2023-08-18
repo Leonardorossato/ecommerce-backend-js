@@ -9,3 +9,5 @@ const mongooseConenction = async () => {
     console.error(error);
   }
 };
+
+module.exports = mongooseConenction;
