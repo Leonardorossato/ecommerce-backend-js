@@ -10,10 +10,10 @@ class AuthController {
         await newUser.save();
         return res.status(201).json(newUser);
       } else {
-        throw new Error("Error in one of the user fields");
+        return res.status(403).json("Error in one of the user fields");
       }
     } catch (error) {
-      throw new Error("User already registered.");
+      return res.status(403).json("User already registered.");
     }
   };
 
