@@ -1,12 +1,21 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
-const userSchema = new mongoose.Schema({
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  passsword: { type: String, required: true },
-});
+const userSchema = new mongoose.Schema(
+  {
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    passsword: { type: String, required: true },
+    role: { type: String, default: "user" },
+    cart: { type: Array, default: [] },
+    address: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
+    whihsList: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+  },
+  {
+    timeseries: true,
+  }
+);
 
 const User = mongoose.model("User", userSchema);
 
