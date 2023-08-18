@@ -17,6 +17,6 @@ mongooseConenction();
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
 
-app.listen(() => {
+app.listen(processEnv.APP_PORT,() => {
   console.log(`Server application is running at ${processEnv.APP_PORT}`);
 });
