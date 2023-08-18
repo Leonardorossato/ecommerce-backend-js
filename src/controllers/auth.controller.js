@@ -10,10 +10,10 @@ class AuthController {
         await newUser.save();
         return res.status(201).json(newUser);
       } else {
-        throw new Error("Error in one of the user fields");
+        return res.status(403).json("Error in one of the user fields");
       }
     } catch (error) {
-      throw new Error("User already registered.");
+      return res.status(403).json("User already registered.");
     }
   };
 
@@ -22,11 +22,15 @@ class AuthController {
       const { email, password } = req.body;
       const user = await User.findOne({ email: email });
       if (user && (await user.isPasswordMatched(password))) {
-        return res.status(201).json(user);
+        return res.status(201).json({
+          token: generateToken(user._id),
+        });
       } else {
-        throw new Error("Invalid Credentials");
+        return res.status(403).json("Invalid Credentials");
       }
-    } catch (error) {}
+    } catch (error) {
+      return res.status(403).json("Email or password not correct");
+    }
   };
 }
 
