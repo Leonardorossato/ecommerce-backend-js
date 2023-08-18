@@ -6,6 +6,7 @@ const processEnv = require("./env/envoriment");
 const mongooseConenction = require("./config/mongo.config");
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cores());
 app.use(cookies());
 
