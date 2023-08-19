@@ -1,7 +1,9 @@
-const generateToken = require("../middleware/generate.token.middleware");
 const passwordMatchs = require("../middleware/password.middleware");
 const User = require("../models/user.model");
-
+const {
+  generateRefreshToken,
+  generateToken,
+} = require("../middleware/generate.token.middleware");
 class AuthController {
   static register = async (req, res) => {
     try {
@@ -26,8 +28,19 @@ class AuthController {
       if (!user && !passwordMatchs(password)) {
         return res.status(403).json("Invalid Credentials");
       } else {
-        let token = generateToken(user.id);
-        return res.status(201).json({ token: token });
+        const refreshToken = await generateRefreshToken(user.id);
+        await User.findByIdAndUpdate(
+          user.id,
+          {
+            refreshToken: refreshToken,
+          },
+          { new: true }
+        );
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          maxAge: 72 * 60 * 60 * 1000,
+        });
+        return res.status(201).json({ token: generateToken(user.id) });
       }
     } catch (error) {
       return res.status(403).json("Email or password not correct");
