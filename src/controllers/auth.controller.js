@@ -1,3 +1,5 @@
+const generateToken = require("../middleware/generate.token.middleware");
+const passwordMatchs = require("../middleware/password.middleware");
 const User = require("../models/user.model");
 
 class AuthController {
@@ -21,12 +23,11 @@ class AuthController {
     try {
       const { email, password } = req.body;
       const user = await User.findOne({ email: email });
-      if (user && (await user.isPasswordMatched(password))) {
-        return res.status(201).json({
-          token: generateToken(user._id),
-        });
-      } else {
+      if (!user && !passwordMatchs(password)) {
         return res.status(403).json("Invalid Credentials");
+      } else {
+        let token = generateToken(user.id);
+        return res.status(201).json({ token: token });
       }
     } catch (error) {
       return res.status(403).json("Email or password not correct");
