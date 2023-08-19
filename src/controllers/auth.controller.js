@@ -1,9 +1,11 @@
 const passwordMatchs = require("../middleware/password.middleware");
 const User = require("../models/user.model");
+const jwt = require("jsonwebtoken");
 const {
   generateRefreshToken,
   generateToken,
 } = require("../middleware/generate.token.middleware");
+const processEnv = require("../env/envoriment");
 class AuthController {
   static register = async (req, res) => {
     try {
@@ -44,6 +46,35 @@ class AuthController {
       }
     } catch (error) {
       return res.status(403).json("Email or password not correct");
+    }
+  };
+
+  static handleRefreshToken = async (req, res) => {
+    try {
+      const cookie = req.cookies;
+      if (!cookie?.refreshToken) {
+        return res.status(403).json("No refresh token in cookie");
+      }
+      const refreshToken = cookie.refreshToken;
+      const user = await User.findOne({ refreshToken });
+      if (!user) {
+        return res
+          .status(403)
+          .json("No refreshToken present in mongoose Database");
+      }
+      jwt.verify(refreshToken, processEnv.JWT_SECRET, (err, decode) => {
+        if (err || user.id !== decode.id) {
+          return res
+            .status(403)
+            .json("There is something wrong with refresh token");
+        }
+        const accessToken = generateToken(user.id);
+        return res.status(200).json({ accessToken: accessToken });
+      });
+    } catch (error) {
+      return res
+        .status(401)
+        .json({ message: "Error generating access token: " });
     }
   };
 }
