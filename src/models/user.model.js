@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: { type: String, default: "user" },
     cart: { type: Array, default: [] },
+    refreshToken: { type: String },
     isBlocked: { type: Boolean, default: false },
     address: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
     whihsList: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
