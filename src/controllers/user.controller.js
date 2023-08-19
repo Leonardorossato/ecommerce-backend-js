@@ -4,7 +4,7 @@ class UserController {
   static findAll = async (req, res) => {
     try {
       const user = await User.find();
-      return res.staus(200).json(user);
+      return res.status(200).json(user);
     } catch (error) {
       return res.status(500).json("Error to find all users");
     }
@@ -12,8 +12,8 @@ class UserController {
 
   static findOne = async (req, res) => {
     try {
-      const id = req.params;
-      const user = await User.findOne({ id: id });
+      const { id } = req.params;
+      const user = await User.findById(id);
       if (!user) {
         return res.status(404).json(`Error to find a user with id ${id}`);
       }
@@ -25,12 +25,12 @@ class UserController {
 
   static update = async (req, res) => {
     try {
-      const id = req.params;
+      const { id } = req.params;
       const user = await User.findById(id);
       if (!user) {
         return res.status(404).json(`Error to find a user with id ${id}`);
       }
-      await User.findOneAndUpdate(
+      await User.findByIdAndUpdate(
         id,
         {
           firstName: req.body.firstName,
@@ -49,7 +49,7 @@ class UserController {
   static delete = async (req, res) => {
     try {
       const { id } = req.params;
-      const user = await User.findOneAndDelete({ id: id });
+      const user = await User.findByIdAndDelete(id);
       if (!user) {
         return res.status(404).json(`Error to find a user with id ${id}`);
       }
@@ -58,6 +58,40 @@ class UserController {
       return res
         .status(500)
         .json({ message: `Error deleting user with id ${id}` });
+    }
+  };
+
+  static blockUser = async (req, res) => {
+    try {
+      const { id } = req.params;
+      await User.findByIdAndUpdate(
+        id,
+        {
+          isBlocked: true,
+        },
+        { new: true }
+      );
+      return res.status(200).json({ message: "User block successfully." });
+    } catch (error) {
+      return res.status(500).json({ message: "Error in block this user." });
+    }
+  };
+
+  static unblockUser = async (req, res) => {
+    try {
+      const { id } = req.params;
+      await User.findByIdAndUpdate(
+        id,
+        {
+          isBlocked: false,
+        },
+        { new: true }
+      );
+      return res.status(200).json({ message: "User unblocked successfully." });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: `Error unblocking user with id ${id}` });
     }
   };
 }
