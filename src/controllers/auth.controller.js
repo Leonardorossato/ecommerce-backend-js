@@ -77,6 +77,34 @@ class AuthController {
         .json({ message: "Error generating access token: " });
     }
   };
+
+  static logOut = async (req, res) => {
+    try {
+      const cookie = req.cookies;
+      if (!cookie?.refreshToken) {
+        return res.status(404).json({ message: "No Refresh Token in Cookie" });
+      }
+      const refreshToken = cookie.refreshToken;
+      const user = await User.findOne({refreshToken});
+      if (!user) {
+        res.clearCookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: true,
+        });
+        return res.status(204).json({ message: "Forbidden" });
+      }
+      await User.findOneAndUpdate({refreshToken: refreshToken}, {
+        refreshToken: "",
+      });
+      res.clearCookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: true,
+      });
+      return res.status(200).json({ message: "Logout successfuly." });
+    } catch (error) {
+      return res.status(500).json({ message: "Error: " + error.message });
+    }
+  };
 }
 
 module.exports = AuthController;
