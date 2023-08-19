@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: { type: String, default: "user" },
     cart: { type: Array, default: [] },
+    isBlocked: { type: Boolean, default: false },
     address: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
     whihsList: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
   },
@@ -22,10 +23,7 @@ const User = mongoose.model("User", userSchema);
 userSchema.pre("save", async function (next) {
   const salt = await bcrypt.genSalt(10);
   this.passsword = await bcrypt.hash(this.passsword, salt);
+  next();
 });
-
-userSchema.methods.isPasswordMatched = async function (userPassword) {
-  return await bcrypt.compare(userPassword, this.passsword);
-};
 
 module.exports = User;
