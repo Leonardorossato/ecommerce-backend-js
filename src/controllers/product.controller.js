@@ -24,6 +24,54 @@ class ProductController {
     }
   };
 
+  static queryPagination = async (req, res) => {
+    try {
+      //Filtering
+      const queryObject = { ...req.query };
+      const excludeFields = ["page", "sort", "limit", "fields"];
+      excludeFields.forEach((el) => delete queryObject[el]);
+      let queryString = JSON.stringify(queryObject);
+      queryString = queryString.replace(
+        /\b(get|gt|let|lt)\b/g,
+        (match) => `$${match}`
+      );
+
+      let query = Product.find(JSON.parse(queryString));
+
+      //Sorting
+      if (req.query.sort) {
+        const sortBy = req.query.sort.split(",").join(" ");
+        query = query.sort(sortBy);
+      } else {
+        query = query.sort("-createdAt");
+      }
+
+      //Limiting the fields
+      if (req.query.fields) {
+        const fields = req.query.fields.split(",").join(" ");
+        query = query.sort(fields);
+      } else {
+        query = query.select("-__v");
+      }
+
+      //Pagination
+      const page = req.query.page;
+      const limit = req.query.limit;
+      const skip = (page - 1) * limit;
+      query = query.skip(skip).limit(limit);
+      if (req.query.page) {
+        const productCount = await Product.countDocuments();
+        if (skip >= productCount) {
+          return res.status(404).send("This product does not exist");
+        }
+      }
+      const product = await query;
+      return res.status(200).send(product);
+    } catch (error) {
+      return res.status(500).json({ message: "Error to do pagination" });
+    }
+  };
+
   static findOne = async (req, res) => {
     try {
       const { id } = req.params;
@@ -39,7 +87,7 @@ class ProductController {
 
   static update = async (req, res) => {
     try {
-      const {id} = req.params;
+      const { id } = req.params;
       if (req.body.title) {
         req.body.slug = slugify(req.body.title);
       }
