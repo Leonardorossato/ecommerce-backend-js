@@ -1,10 +1,11 @@
 const express = require("express");
-const ProductController = require("../controllers/product.controller");
 const router = express.Router();
+const ProductController = require("../controllers/product.controller");
 
 router.get("/all", ProductController.findAll);
-router.post("/create", ProductController.create);
 router.get("/:id", ProductController.findOne);
+router.get("/", ProductController.queryPagination);
+router.post("/create", ProductController.create);
 router.put("/:id", ProductController.update);
 router.delete("/:id", ProductController.delete);
 
