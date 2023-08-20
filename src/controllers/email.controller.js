@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 const processEnv = require("../env/envoriment");
 
-const sendEmail = async (req, res, data) => {
+const sendEmail = async (data, req, res) => {
   try {
     let transport = nodemailer.createTransport({
       host: processEnv.NODEMAILER_HOST,
@@ -12,13 +12,13 @@ const sendEmail = async (req, res, data) => {
         pass: processEnv.NODEMAILER_PASSWORD,
       },
     });
-    let info = {
+    let info = await transport.sendMail({
       from: "Hey <abc@gmail.com>",
       to: data.to,
       subject: data.subject,
       text: data.text,
       html: data.html,
-    };
+    });
     console.log(info.messageId);
     console.log(nodemailer.getTestMessageUrl(info));
   } catch (error) {
