@@ -27,12 +27,12 @@ class AuthController {
     try {
       const { email, password } = req.body;
       const user = await User.findOne({ email: email });
-      if (!user && !passwordMatchs(password)) {
+      if (!user && (await user.isPasswordMatched(password))) {
         return res.status(403).json("Invalid Credentials");
       } else {
-        const refreshToken = await generateRefreshToken(user.id);
+        const refreshToken = await generateRefreshToken(user._id);
         await User.findByIdAndUpdate(
-          user.id,
+          user._id,
           {
             refreshToken: refreshToken,
           },
@@ -85,7 +85,7 @@ class AuthController {
         return res.status(404).json({ message: "No Refresh Token in Cookie" });
       }
       const refreshToken = cookie.refreshToken;
-      const user = await User.findOne({refreshToken});
+      const user = await User.findOne({ refreshToken });
       if (!user) {
         res.clearCookie("refreshToken", refreshToken, {
           httpOnly: true,
@@ -93,9 +93,12 @@ class AuthController {
         });
         return res.status(204).json({ message: "Forbidden" });
       }
-      await User.findOneAndUpdate({refreshToken: refreshToken}, {
-        refreshToken: "",
-      });
+      await User.findOneAndUpdate(
+        { refreshToken: refreshToken },
+        {
+          refreshToken: "",
+        }
+      );
       res.clearCookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
