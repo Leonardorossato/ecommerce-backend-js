@@ -1,5 +1,8 @@
+const processEnv = require("../env/envoriment");
 const User = require("../models/user.model");
-
+const crypto = require("crypto");
+const sendEmail = require("./email.controller");
+const validateId = require("../utils/validate.utils");
 class UserController {
   static findAll = async (req, res) => {
     try {
@@ -25,13 +28,14 @@ class UserController {
 
   static update = async (req, res) => {
     try {
-      const { id } = req.params;
-      const user = await User.findById(id);
+      const { _id } = req.user;
+      validateId(_id);
+      const user = await User.findById(_id);
       if (!user) {
         return res.status(404).json(`Error to find a user with id ${id}`);
       }
       await User.findByIdAndUpdate(
-        id,
+        _id,
         {
           firstName: req.body.firstName,
           lastName: req.body.lastName,
@@ -44,6 +48,71 @@ class UserController {
     } catch (error) {
       return res.status(500).json({ message: "Error updating user" });
     }
+  };
+
+  static updatePassword = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      const { password } = req.body;
+      validateId(_id);
+      const user = await User.findById(_id);
+      if (password) {
+        user.password = password;
+        const updatePassword = await user.save();
+        return res.status(200).json(updatePassword);
+      } else {
+        return res.status(404).json({ message: user });
+      }
+    } catch (error) {
+      return res.status(400).json({ message: "Error in update user password" });
+    }
+  };
+
+  static forgotPassword = async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = await User.findOne({ email: email });
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: "User not found with this email" });
+      }
+      const token = await user.createPasswordResetToken();
+      await user.save();
+      const url = `Hi, Please follow this link to reset your password. This is valid for 10 minutes. <a href="http://localhost:${processEnv.APP_PORT}/api/users/reset-password/${token}">Click here</a>`;
+      const data = {
+        to: email,
+        text: "Hey User",
+        subject: "Forgot Password Link",
+        html: url,
+      };
+      sendEmail(data);
+      return res.status(200).json(token);
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: "Error to send reset password token" });
+    }
+  };
+
+  static resetPassword = async (req, res) => {
+    const { password } = req.body;
+    const { token } = req.params;
+    const hashToken = crypto.createHash("sha256").update(token).digest("hex");
+    const user = await User.findOne({
+      passwordResetToken: hashToken,
+      passwordResetExpires: { $gt: Date.now() },
+    });
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Token Expired, Please try again later" });
+    }
+    user.password = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    return res.status(200).json(user);
   };
 
   static delete = async (req, res) => {
