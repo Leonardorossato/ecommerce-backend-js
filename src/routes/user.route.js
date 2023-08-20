@@ -10,6 +10,7 @@ const {
 router.get("/all", validateAuthToken, adminAuthToken, UserController.findAll);
 router.get("/:id", validateAuthToken, adminAuthToken, UserController.findOne);
 router.put("/:id", validateAuthToken, userAuthToken, UserController.update);
+router.put("/:id", validateAuthToken, userAuthToken, UserController.updatePassword);
 router.put(
   "/block/:id",
   validateAuthToken,
