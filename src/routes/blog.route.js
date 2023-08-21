@@ -7,13 +7,20 @@ const {
 const router = express.Router();
 
 router.get("/all", validateAuthToken, adminAuthToken, BlogController.findAll);
-router.get("views/:id", validateAuthToken, adminAuthToken, BlogController.getByNumbersOfViews);
+router.get(
+  "/views/:id",
+  validateAuthToken,
+  adminAuthToken,
+  BlogController.getByNumbersOfViews
+);
 router.post(
   "/create",
   validateAuthToken,
   adminAuthToken,
   BlogController.create
 );
+router.put("/likes", validateAuthToken, BlogController.likeBlog);
+router.put("/dislikes", validateAuthToken, BlogController.deslikeBlog);
 router.put("/:id", validateAuthToken, adminAuthToken, BlogController.update);
 router.delete("/:id", validateAuthToken, adminAuthToken, BlogController.delete);
 
