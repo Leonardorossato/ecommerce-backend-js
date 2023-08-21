@@ -8,6 +8,7 @@ const userRouter = require("./routes/user.route");
 const authRouter = require("./routes/auth.route");
 const productRouter = require("./routes/product.route");
 const blogRouter = require("./routes/blog.route");
+const categoryRouter = require("./routes/category.route");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -20,6 +21,7 @@ app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);
 app.use("/api/blogs", blogRouter);
+app.use("/api/category", categoryRouter);
 
 app.listen(processEnv.APP_PORT, () => {
   console.log(`Server application is running at ${processEnv.APP_PORT}`);
