@@ -9,7 +9,7 @@ const blogSchema = new mongoose.Schema(
     isLiked: { type: Boolean, default: false },
     isDisliked: { type: Boolean, default: false },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    desliks: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    deslikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     image: {
       type: String,
       default:
