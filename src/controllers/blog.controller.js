@@ -1,4 +1,5 @@
 const Blog = require("../models/blog.model");
+const validateId = require("../utils/validate.utils");
 
 class BlogController {
   static create = async (req, res) => {
@@ -23,18 +24,20 @@ class BlogController {
   static getByNumbersOfViews = async (req, res) => {
     try {
       const { id } = req.params;
-      const blog = await Blog.findById(id);
+      const blog = await Blog.findById(id)
+        .populate("likes")
+        .populate("deslikes");
       if (!blog) {
         return res
           .status(404)
           .json({ message: `Blog with id ${id} not found` });
       }
-      const views = await Blog.findByIdAndUpdate(
+      await Blog.findByIdAndUpdate(
         id,
         { $inc: { numberOfViews: 1 } },
         { new: true }
       );
-      return res.status(200).json(blog, views);
+      return res.status(200).json(blog);
     } catch (error) {
       return res
         .status(400)
@@ -71,6 +74,100 @@ class BlogController {
       return res.status(200).json({ message: "Blog deleted successfully" });
     } catch (error) {
       return res.status(500).json({ message: "Error while deleting blog" });
+    }
+  };
+
+  static likeBlog = async (req, res) => {
+    try {
+      const { blogId } = req.body;
+      validateId(blogId);
+      const blog = await Blog.findById(blogId);
+      let userId = req?.user?._id;
+      let isLiked = blog?.isLiked;
+      let alreadyDisliked = blog?.deslikes?.find(
+        (userId) => userId.toString() === userId.toString()
+      );
+      if (alreadyDisliked) {
+        const result = await Blog.findByIdAndUpdate(
+          blogId,
+          {
+            $pull: { deslikes: userId },
+            isDisliked: false,
+          },
+          { new: true }
+        );
+        return res.status(200).json(result);
+      }
+      if (isLiked) {
+        const result = await Blog.findByIdAndUpdate(
+          blogId,
+          {
+            $pull: { likes: userId },
+            isLiked: false,
+          },
+          { new: true }
+        );
+        return res.status(200).json(result);
+      } else {
+        const result = await Blog.findByIdAndUpdate(
+          blogId,
+          {
+            $push: { likes: userId },
+            isLiked: true,
+          },
+          { new: true }
+        );
+        return res.status(200).json(result);
+      }
+    } catch (error) {
+      return res.status(500).json({ message: "Error to like this blog" });
+    }
+  };
+
+  static deslikeBlog = async (req, res) => {
+    try {
+      const { blogId } = req.body;
+      validateId(blogId);
+      const blog = await Blog.findById(blogId);
+      let userId = req?.user?._id;
+      let isDisliked = blog?.isDisliked;
+      let alreadyDisliked = blog?.deslikes?.find(
+        (userId) => userId.toString() === userId.toString()
+      );
+      if (alreadyDisliked) {
+        const result = await Blog.findByIdAndUpdate(
+          blogId,
+          {
+            $pull: { deslikes: userId },
+            isDisliked: false,
+          },
+          { new: true }
+        );
+        return res.status(200).json(result);
+      }
+      if (isDisliked) {
+        const result = await Blog.findByIdAndUpdate(
+          blogId,
+          {
+            $pull: { likes: userId },
+            isLiked: false,
+          },
+          { new: true }
+        );
+        return res.status(200).json(result);
+      } else {
+        const result = await Blog.findByIdAndUpdate(
+          blogId,
+          {
+            $push: { deslikes: userId },
+            isDisliked: true,
+          },
+          { new: true }
+        );
+        return res.status(200).json(result);
+      }
+    } catch (error) {
+      return res.status(500).json({ message: "Error to like this blog" });
     }
   };
 }
