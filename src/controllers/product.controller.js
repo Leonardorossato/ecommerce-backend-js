@@ -1,5 +1,6 @@
 const Product = require("../models/product.model");
 const slugify = require("slugify");
+const User = require("../models/user.model");
 
 class ProductController {
   static create = async (req, res) => {
@@ -114,6 +115,78 @@ class ProductController {
       return res
         .status(500)
         .json({ message: `Error deleting user with id ${id}` });
+    }
+  };
+
+  static addToWishiList = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      const { productId } = req.body;
+      const user = await User.findById(_id);
+      let productsAlreadyAdded = user.whihsList.find(
+        (id) => id.toString() === productId
+      );
+      if (productsAlreadyAdded) {
+        const user = await User.findByIdAndUpdate(
+          _id,
+          { $pull: { whihsList: productId } },
+          { new: true }
+        );
+        return res.status(200).json(user);
+      } else {
+        const user = await User.findByIdAndUpdate(
+          _id,
+          { $push: { whihsList: productId } },
+          { new: true }
+        );
+        return res.status(200).json(user);
+      }
+    } catch (error) {
+      return res
+        .status(400)
+        .json({ message: "Product cannot be added to the wish list" });
+    }
+  };
+
+  static ratingProduct = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      const { star, productId, comment } = req.body;
+      let prodcut = await Product.findById(productId);
+      let productAlreadyRated = prodcut.ratings.find(
+        (userId) => userId.postedby.toString() === _id.toString()
+      );
+      if (productAlreadyRated) {
+        await Product.updateOne(
+          { ratings: { $elemMatch: productAlreadyRated } },
+          { $set: { "ratings.$.star": star, "ratings.$.comment": comment } },
+          { new: true }
+        );
+      } else {
+        await Product.findByIdAndUpdate(
+          productId,
+          {
+            $push: { ratings: { star: star, comment: comment, postedby: _id } },
+          },
+          { new: true }
+        );
+      }
+      const getAllRating = await Product.findById(productId);
+      let totalRating = getAllRating.ratings.length;
+      let sum = getAllRating.ratings
+        .map((item) => item.star)
+        .reduce((prev, curr) => prev + curr, 0);
+      let actualRating = Math.round(sum / totalRating);
+      let product = await Product.findByIdAndUpdate(
+        productId,
+        {
+          totalRating: actualRating,
+        },
+        { new: true }
+      );
+      return res.status(200).json(product);
+    } catch (error) {
+      return res.status(500).json({ message: "Error in ratin a product" });
     }
   };
 }
