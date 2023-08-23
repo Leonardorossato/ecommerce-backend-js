@@ -1,7 +1,8 @@
 const Product = require("../models/product.model");
 const slugify = require("slugify");
 const User = require("../models/user.model");
-
+const cloudinaryUploadImg = require("../utils/cloudinary.utils");
+const validateId = require("../utils/validate.utils");
 class ProductController {
   static create = async (req, res) => {
     try {
@@ -187,6 +188,33 @@ class ProductController {
       return res.status(200).json(product);
     } catch (error) {
       return res.status(500).json({ message: "Error in ratin a product" });
+    }
+  };
+
+  static uploadImages = async (req, res) => {
+    try {
+      const { id } = req.params;
+      validateId(id);
+      let upload = (path) => cloudinaryUploadImg(path, "images");
+      const urls = [];
+      const files = req.files;
+      for (const file of files) {
+        const { path } = file;
+        const newPath = await upload(path);
+        urls.push(newPath);
+      }
+      const prodcut = await Product.findByIdAndUpdate(
+        id,
+        {
+          images: urls.map((file) => {
+            return file;
+          }),
+        },
+        { new: true }
+      );
+      return res.status(200).json(prodcut);
+    } catch (error) {
+      return res.status(400).json({ message: "Error in upload this image" });
     }
   };
 }
