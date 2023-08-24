@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema(
     cart: { type: Array, default: [] },
     refreshToken: { type: String },
     isBlocked: { type: Boolean, default: false },
-    address: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
+    address: { type: String },
     whihsList: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
     passwordChangedAt: Date,
     passwordResetToken: String,
