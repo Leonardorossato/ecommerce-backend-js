@@ -32,7 +32,7 @@ router.put(
   adminAuthToken,
   uploadPhoto.array("images", 2),
   productImgResize,
-  ProductController.uploadImages
+  ProductController.uploadProductImages
 );
 router.put(
   "/rating",
