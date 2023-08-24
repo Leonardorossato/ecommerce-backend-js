@@ -3,6 +3,7 @@ const slugify = require("slugify");
 const User = require("../models/user.model");
 const cloudinaryUploadImg = require("../utils/cloudinary.utils");
 const validateId = require("../utils/validate.utils");
+const fs = require("fs");
 class ProductController {
   static create = async (req, res) => {
     try {
@@ -191,17 +192,18 @@ class ProductController {
     }
   };
 
-  static uploadImages = async (req, res) => {
+  static uploadProductImages = async (req, res) => {
     try {
       const { id } = req.params;
       validateId(id);
-      let upload = (path) => cloudinaryUploadImg(path, "images");
+      const upload = (path) => cloudinaryUploadImg(path, "images");
       const urls = [];
       const files = req.files;
       for (const file of files) {
         const { path } = file;
         const newPath = await upload(path);
         urls.push(newPath);
+        fs.unlinkSync(path);
       }
       const prodcut = await Product.findByIdAndUpdate(
         id,
