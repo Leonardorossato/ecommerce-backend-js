@@ -49,6 +49,35 @@ class AuthController {
     }
   };
 
+  static loginAdmin = async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const admin = await User.findOne({ email: email });
+      if (admin.role !== "admin") {
+        return res.status(401).json({ message: "Not authorized." });
+      }
+      if (!admin && (await admin.isPasswordMatched(password))) {
+        return res.status(403).json("Invalid Credentials");
+      } else {
+        const refreshToken = await generateRefreshToken(admin._id);
+        await User.findByIdAndUpdate(
+          admin._id,
+          {
+            refreshToken: refreshToken,
+          },
+          { new: true }
+        );
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          maxAge: 72 * 60 * 60 * 1000,
+        });
+        return res.status(201).json({ token: generateToken(admin._id) });
+      }
+    } catch (error) {
+      return res.status(403).json("Email or password not correct");
+    }
+  };
+
   static handleRefreshToken = async (req, res) => {
     try {
       const cookie = req.cookies;
