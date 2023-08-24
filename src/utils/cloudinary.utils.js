@@ -7,17 +7,19 @@ cloudinary.v2.config({
   api_secret: processEnv.CLOUDINARY_API_SECRET,
 });
 
-const cloudinaryUploadImg = async (file) => {
+const cloudinaryUploadImg = async (fileUpload) => {
   return new Promise((resolve) => {
-    cloudinary.v2.uploader.upload(file, (result) => {
-      resolve(
-        {
-          url: result.secure_url,
-        },
-        {
-          resource_type: "auto",
-        }
-      );
+    cloudinary.v2.uploader.upload(fileUpload, (error, result) => {
+      if (error) {
+        console.error("Erro ao fazer upload para o Cloudinary:", error);
+        resolve(null); // Resolva com valor nulo em caso de erro
+        return;
+      }
+
+      resolve({
+        url: result.secure_url,
+        resource_type: "auto",
+      });
     });
   });
 };
