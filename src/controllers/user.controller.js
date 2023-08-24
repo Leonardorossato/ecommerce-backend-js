@@ -163,6 +163,43 @@ class UserController {
         .json({ message: `Error unblocking user with id ${id}` });
     }
   };
+
+  static getWishList = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      const user = await User.findById(_id).populate("whihsList");
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: `User with this id ${_id} not found` });
+      }
+      return res.status(200).json(user);
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: "Error to find a User with wish list." });
+    }
+  };
+
+  static saveAddress = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      const user = await User.findById(_id);
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: `User with this id ${_id} not found` });
+      }
+      const address = await User.findByIdAndUpdate(
+        _id,
+        { address: req.body.address },
+        { new: true }
+      );
+      return res.status(200).json(address);
+    } catch (error) {
+      return res.status(400).json({ message: "Address error or not found." });
+    }
+  };
 }
 
 module.exports = UserController;
