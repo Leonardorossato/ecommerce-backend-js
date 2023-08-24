@@ -6,6 +6,10 @@ const {
   userAuthToken,
   adminAuthToken,
 } = require("../middleware/jwt.middleware");
+const {
+  uploadPhoto,
+  productImgResize,
+} = require("../middleware/multer.middleware");
 
 router.get("/all", ProductController.findAll);
 router.get("/:id", ProductController.findOne);
@@ -21,6 +25,14 @@ router.put(
   validateAuthToken,
   userAuthToken,
   ProductController.addToWishiList
+);
+router.put(
+  "/upload/:id",
+  validateAuthToken,
+  adminAuthToken,
+  uploadPhoto.array("images", 2),
+  productImgResize,
+  ProductController.uploadProductImages
 );
 router.put(
   "/rating",
