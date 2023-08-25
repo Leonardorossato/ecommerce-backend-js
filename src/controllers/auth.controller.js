@@ -27,10 +27,14 @@ class AuthController {
     try {
       const { email, password } = req.body;
       const user = await User.findOne({ email: email });
-      if (!user && (await user.isPasswordMatched(password))) {
+      if (!user && (await passwordMatchs.isPasswordMatched(password))) {
         return res.status(403).json("Invalid Credentials");
       } else {
-        const refreshToken = await generateRefreshToken(user._id);
+        const refreshToken = await generateRefreshToken(
+          user._id,
+          user.email,
+          user.password
+        );
         await User.findByIdAndUpdate(
           user._id,
           {
@@ -42,7 +46,9 @@ class AuthController {
           httpOnly: true,
           maxAge: 72 * 60 * 60 * 1000,
         });
-        return res.status(201).json({ token: generateToken(user.id) });
+        return res
+          .status(201)
+          .json({ token: generateToken(user._id, user.email, user.password) });
       }
     } catch (error) {
       return res.status(403).json("Email or password not correct");
@@ -56,10 +62,14 @@ class AuthController {
       if (admin.role !== "admin") {
         return res.status(401).json({ message: "Not authorized." });
       }
-      if (!admin && (await admin.isPasswordMatched(password))) {
+      if (!admin && (await passwordMatchs.isPasswordMatched(password))) {
         return res.status(403).json("Invalid Credentials");
       } else {
-        const refreshToken = await generateRefreshToken(admin._id);
+        const refreshToken = await generateRefreshToken(
+          admin._id,
+          admin.email,
+          admin.password
+        );
         await User.findByIdAndUpdate(
           admin._id,
           {
@@ -71,7 +81,11 @@ class AuthController {
           httpOnly: true,
           maxAge: 72 * 60 * 60 * 1000,
         });
-        return res.status(201).json({ token: generateToken(admin._id) });
+        return res
+          .status(201)
+          .json({
+            token: generateToken(admin._id, admin.email, admin.password),
+          });
       }
     } catch (error) {
       return res.status(403).json("Email or password not correct");
