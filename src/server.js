@@ -4,6 +4,8 @@ const cores = require("cors");
 const cookies = require("cookie-parser");
 const processEnv = require("./env/envoriment");
 const mongooseConenction = require("./config/mongo.config");
+
+///All imports of routes
 const userRouter = require("./routes/user.route");
 const authRouter = require("./routes/auth.route");
 const productRouter = require("./routes/product.route");
@@ -20,6 +22,7 @@ app.use(cookies());
 
 mongooseConenction();
 
+//routes
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/products", productRouter);
@@ -27,7 +30,7 @@ app.use("/api/blogs", blogRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/blog-category", blogCategory);
 app.use("/api/brand", brandRouter);
-app.use("/api/cupom", cupomRouter); 
+app.use("/api/cupom", cupomRouter);
 
 app.listen(processEnv.APP_PORT, () => {
   console.log(`Server application is running at ${processEnv.APP_PORT}`);
