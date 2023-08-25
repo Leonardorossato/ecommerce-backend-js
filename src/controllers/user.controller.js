@@ -1,8 +1,13 @@
 const processEnv = require("../env/envoriment");
 const User = require("../models/user.model");
 const crypto = require("crypto");
+const uniqid = require("uniqid");
 const sendEmail = require("./email.controller");
 const validateId = require("../utils/validate.utils");
+const Cart = require("../models/cart.model");
+const Product = require("../models/product.model");
+const Cupom = require("../models/cupom.model");
+const Order = require("../models/order.model");
 class UserController {
   static findAll = async (req, res) => {
     try {
@@ -198,6 +203,184 @@ class UserController {
       return res.status(200).json(address);
     } catch (error) {
       return res.status(400).json({ message: "Address error or not found." });
+    }
+  };
+
+  static cart = async (req, res) => {
+    try {
+      const { cart } = req.body;
+      const { _id } = req.user;
+      validateId(_id);
+      const user = await User.findById(_id);
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: `User with this id ${_id} not found` });
+      }
+      let products = [];
+      const cartAlreadyExists = await Cart.findOne({ orderBy: user._id });
+      if (cartAlreadyExists) {
+        cartAlreadyExists.remove();
+      }
+      for (let i = 0; i < cart.length; i++) {
+        let object = {};
+        object.product = cart[i]._id;
+        object.count = cart[i].count;
+        object.color = cart[i].color;
+
+        let getThisPrice = await Product.findById(cart[i]._id)
+          .select("price")
+          .exec();
+        object.price = getThisPrice.price;
+        products.push(object);
+      }
+      let cartTotal = 0;
+      for (let i = 0; i < products.length; i++) {
+        cartTotal = cartTotal + products[i].price * products[i].count;
+      }
+      let result = await new Cart({
+        products,
+        cartTotal,
+        orderBy: user?._id,
+      }).save();
+      return res.status(200).json(result);
+    } catch (error) {
+      return res
+        .status(400)
+        .json({ message: "Error to add a product to this cart" });
+    }
+  };
+
+  static getAllCarts = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      validateId(_id);
+      const cart = await Cart.findOne({ orderBy: _id }).populate(
+        "products.product",
+        "_id title price totalAfterDiscount"
+      );
+      return res.status(200).json(cart);
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: "Error to find all products in cart" });
+    }
+  };
+
+  static emptyCart = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      const user = await User.findById(_id);
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: `User with this id ${_id} not found` });
+      }
+      const cart = await Cart.findOneAndRemove({ orderBy: _id }).populate(
+        "products.product"
+      );
+      return res.status(200).json(cart);
+    } catch (error) {
+      return res.status(400).json({ message: "Error in this operation." });
+    }
+  };
+
+  static applyCupom = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      const { cupom } = req.body;
+      const validCupom = await Cupom.findOne({ name: cupom });
+      if (validCupom === null) {
+        return res.status(403).json({ message: "Invalid cupom" });
+      }
+      const user = await User.findOne({ _id });
+      let { cartTotal } = await Cart.findOne({
+        orderBy: user._id,
+      }).populate("products.product");
+      let totalAfterDiscount =
+        (cartTotal * validCupom.discount) / 100 - cartTotal.toFixed(2);
+      await Cart.findOneAndUpdate(
+        { orderBy: user._id },
+        { totalAfterDiscount },
+        { new: true }
+      );
+      return res.status(200).json(totalAfterDiscount);
+    } catch (error) {
+      return res
+        .status(400)
+        .json({ message: "Cupom cannot be applied because its invalid" });
+    }
+  };
+
+  static createOrder = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      const { COD, cupomApplied } = req.body;
+      if (!COD) {
+        return res
+          .status(400)
+          .json({ message: "Error in create a cash order" });
+      }
+      const user = await User.findById(_id);
+      const userCart = await Cart.findOne({ orderBy: user._id });
+      let amount = 0;
+      if (cupomApplied && userCart.totalAfterDiscount) {
+        amount = userCart.totalAfterDiscount;
+      } else {
+        amount = userCart.cartTotal * 100;
+      }
+      let order = await new Order({
+        products: userCart.products,
+        payment: {
+          id: uniqid(),
+          method: "COD",
+          amount: amount,
+          status: "Cash on Delivery",
+          created: Date.now(),
+          currency: "USD",
+        },
+        orderBy: user._id,
+        orderStatus: "Cash on Delivery",
+      }).save();
+      let update = await userCart.products.map((item) => {
+        return {
+          updateOne: {
+            filter: { _id: item.product._id },
+            update: { $inc: { quantity: -item.count, sold: +item.count } },
+          },
+        };
+      });
+      await Product.bulkWrite(update, {});
+      return res.status(200).json({ message: "Success" });
+    } catch (error) {
+      return res.status(500).json({ message: "Error in create a order" });
+    }
+  };
+
+  static getAllOrders = async (req, res) => {
+    try {
+      const { _id } = req.user;
+      validateId(_id);
+      const orders = await Order.findOne({ orderBy: _id });
+      return res.status(200).json(orders);
+    } catch (error) {
+      return res.status(500).json({ message: "Error to find all users ordes" });
+    }
+  };
+
+  static updateOrderStatus = async (req, res) => {
+    try {
+      const { status } = req.body;
+      const { id } = req.params;
+      validateId(id);
+      const order = await Order.findByIdAndUpdate(
+        id,
+        { orderStatus: status, payment: { status: status } },
+        { new: true }
+      );
+      return res.status(200).json(order);
+    } catch (error) {
+      return res.status(500).json({ message: "Error in update order" });
     }
   };
 }
